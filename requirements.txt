@@ -1,0 +1,6 @@
+C:\Users\vladi\grandvlad
+fastapi
+uvicorn
+jinja2
+python-dotenv
+openai
