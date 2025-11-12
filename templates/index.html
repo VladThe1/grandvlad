@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Grand Vlad 🎓 – En ligne</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+
+  <body class="bg-gray-100 flex flex-col h-screen">
+    <!-- Header -->
+    <header class="bg-indigo-600 text-white text-center py-4 shadow-md flex justify-between items-center px-4">
+      <div>
+        <h1 class="text-2xl font-semibold">Grand Vlad 🎓</h1>
+        <p class="text-sm opacity-80">Ton assistant étudiant intelligent</p>
+      </div>
+      <button
+        onclick="clearChat()"
+        class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg text-white text-sm"
+      >
+        Effacer la conversation
+      </button>
+    </header>
+
+    <!-- Zone de chat -->
+    <main
+      id="chat"
+      class="flex-1 overflow-y-auto p-4 space-y-4 max-w-2xl mx-auto w-full"
+    >
+      <div class="text-center text-gray-500 text-sm mt-4">
+        💬 Dis “Salut” pour commencer la conversation avec Grand Vlad !
+      </div>
+    </main>
+
+    <!-- Zone de saisie -->
+    <footer
+      class="bg-white border-t p-4 flex gap-2 max-w-2xl mx-auto w-full items-center"
+    >
+      <textarea
+        id="msg"
+        class="flex-1 border rounded-xl p-3 resize-none focus:ring-2 focus:ring-indigo-400 outline-none"
+        rows="2"
+        placeholder="Pose ta question à Grand Vlad..."
+      ></textarea>
+      <button
+        onclick="send()"
+        class="bg-indigo-600 text-white px-5 py-2 rounded-xl hover:bg-indigo-700 transition"
+      >
+        Envoyer
+      </button>
+    </footer>
+
+    <script>
+      const chat = document.getElementById("chat");
+      const title = document.querySelector("title");
+
+      function addMessage(role, text) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "flex " + (role === "user" ? "justify-end" : "justify-start");
+
+        const bubbleContainer = document.createElement("div");
+        bubbleContainer.className = "flex items-start gap-2";
+
+        // Avatar
+        const avatar = document.createElement("div");
+        avatar.className = "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white";
+        avatar.style.flexShrink = "0";
+        if (role === "user") {
+          avatar.classList.add("bg-indigo-600");
+          avatar.textContent = "👤";
+        } else {
+          avatar.classList.add("bg-gray-400");
+          avatar.textContent = "🤖";
+        }
+
+        // Bubble
+        const bubble = document.createElement("div");
+        bubble.className =
+          role === "user"
+            ? "bg-indigo-600 text-white px-4 py-2 rounded-2xl max-w-[75%]"
+            : "bg-gray-200 text-gray-900 px-4 py-2 rounded-2xl max-w-[75%]";
+
+        bubble.textContent = text;
+
+        bubbleContainer.appendChild(avatar);
+        bubbleContainer.appendChild(bubble);
+        wrapper.appendChild(bubbleContainer);
+
+        chat.appendChild(wrapper);
+        chat.scrollTop = chat.scrollHeight;
+      }
+
+      function saveHistory() {
+        localStorage.setItem("chat_history", chat.innerHTML);
+      }
+
+      function loadHistory() {
+        const saved = localStorage.getItem("chat_history");
+        if (saved) chat.innerHTML = saved;
+      }
+
+      function clearChat() {
+        chat.innerHTML = "";
+        localStorage.removeItem("chat_history");
+      }
+
+      async function send() {
+        const msg = document.getElementById("msg").value.trim();
+        if (!msg) return;
+
+        addMessage("user", msg);
+        saveHistory();
+        document.getElementById("msg").value = "";
+
+        const tempMsg = "⏳ Grand Vlad réfléchit...";
+        addMessage("assistant", tempMsg);
+        title.textContent = "Grand Vlad 🎓 – Réfléchit…";
+
+        try {
+          const res = await fetch("/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: msg }),
+          });
+
+          const data = await res.json();
+          chat.lastChild.remove(); // supprime le message temporaire
+          addMessage("assistant", data.response);
+          title.textContent = "Grand Vlad 🎓 – En ligne";
+          saveHistory();
+        } catch (err) {
+          chat.lastChild.remove();
+          addMessage("assistant", "⚠️ Erreur : impossible de contacter Grand Vlad.");
+          title.textContent = "Grand Vlad 🎓 – Erreur";
+        }
+      }
+
+      loadHistory();
+    </script>
+  </body>
+</html>
